@@ -1,0 +1,73 @@
+{
+	"deploy": {
+		"VM:-": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"main:1": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"ropsten:3": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"rinkeby:4": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"kovan:42": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"goerli:5": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		},
+		"Custom": {
+			"linkReferences": {},
+			"autoDeployLib": true
+		}
+	},
+	"data": {
+		"bytecode": {
+			"functionDebugData": {
+				"@_792": {
+					"entryPoint": null,
+					"id": 792,
+					"parameterSlots": 0,
+					"returnSlots": 0
+				}
+			},
+			"generatedSources": [],
+			"linkReferences": {},
+			"object": "6080604052348015600e575f5ffd5b50603e80601a5f395ff3fe60806040525f5ffdfea2646970667358221220ec1c2f0c1f03b13b016a9251d3976cc4f8c36b2e8d99cb1c6c0e078401d48e3c64736f6c634300081e0033",
+			"opcodes": "PUSH1 0x80 PUSH1 0x40 MSTORE CALLVALUE DUP1 ISZERO PUSH1 0xE JUMPI PUSH0 PUSH0 REVERT JUMPDEST POP PUSH1 0x3E DUP1 PUSH1 0x1A PUSH0 CODECOPY PUSH0 RETURN INVALID PUSH1 0x80 PUSH1 0x40 MSTORE PUSH0 PUSH0 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 EOFCREATE 0x1C 0x2F 0xC 0x1F SUB 0xB1 EXTCODESIZE ADD PUSH11 0x9251D3976CC4F8C36B2E8D SWAP10 0xCB SHR PUSH13 0xE078401D48E3C64736F6C6343 STOP ADDMOD 0x1E STOP CALLER ",
+			"sourceMap": "119:44:5:-:0;;;144:16;;;;;;;;;;119:44;;;;;;"
+		},
+		"deployedBytecode": {
+			"functionDebugData": {},
+			"generatedSources": [],
+			"immutableReferences": {},
+			"linkReferences": {},
+			"object": "60806040525f5ffdfea2646970667358221220ec1c2f0c1f03b13b016a9251d3976cc4f8c36b2e8d99cb1c6c0e078401d48e3c64736f6c634300081e0033",
+			"opcodes": "PUSH1 0x80 PUSH1 0x40 MSTORE PUSH0 PUSH0 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 EOFCREATE 0x1C 0x2F 0xC 0x1F SUB 0xB1 EXTCODESIZE ADD PUSH11 0x9251D3976CC4F8C36B2E8D SWAP10 0xCB SHR PUSH13 0xE078401D48E3C64736F6C6343 STOP ADDMOD 0x1E STOP CALLER ",
+			"sourceMap": "119:44:5:-:0;;;;;"
+		},
+		"gasEstimates": {
+			"creation": {
+				"codeDepositCost": "12400",
+				"executionCost": "64",
+				"totalCost": "12464"
+			}
+		},
+		"methodIdentifiers": {}
+	},
+	"abi": [
+		{
+			"inputs": [],
+			"stateMutability": "nonpayable",
+			"type": "constructor"
+		}
+	]
+}
