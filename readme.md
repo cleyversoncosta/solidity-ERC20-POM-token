@@ -1,247 +1,270 @@
-POMToken & RewardsDistributor – Manual Test Plan
-================================================
-
-Solidity `0.8.30` • OpenZeppelin v5+ • Target: Tenderly Fork / Polygon Amoy / Remix
-
-1) Environment Setup
---------------------
-
-*   Compiler: `0.8.30`
-*   Libraries: `@openzeppelin/contracts` v5.0+
-*   Network: Tenderly fork or Polygon Amoy testnet
-*   Fund a test wallet with small MATIC for gas
-
-2) Deploy Sequence
-------------------
-
-### 2.1 Deploy POMToken
-
-*   No constructor params. Compile & deploy.
-*   Expect: contract deployed, owner = deployer, totalSupply = `5_000_000_000 * 1e18`.
-
-### 2.2 Verify Initial Distribution
-
-Use `balanceOf()` for each wallet:
-
-Wallet
-
-Expected Tokens
-
-TREASURY\_WALLET
-
-1,250,000,000
-
-REWARDS\_WALLET
-
-1,500,000,000
-
-DEV\_WALLET
-
-750,000,000
-
-MARKETING\_WALLET
-
-500,000,000
-
-LIQUIDITY\_WALLET
-
-500,000,000
-
-ADVISORS\_WALLET
-
-250,000,000
-
-DAO\_WALLET
-
-250,000,000
-
-Pass if totals sum to 5B and each balance matches.
-
-3) Basic Token Functionality
-----------------------------
-
-### 3.1 Transfer (happy path)
-
-*   Transfer from `DEV_WALLET` → `MARKETING_WALLET`.
-*   Expected: success (trading is enabled by default in your snippet).
-
-### 3.2 Pause / Unpause
-
-1.  Owner calls `pause()`.
-2.  Attempt any `transfer()` → expect revert `"Pausable: paused"`.
-3.  Owner calls `unpause()` → transfers work again.
-
-### 3.3 Ownership Guards
-
-*   Non-owner calls `pause()` / `setLimits()` → expect revert `"Ownable: caller is not the owner"`.
-*   Owner can `transferOwnership(newOwner)` and new owner can call admin funcs.
-
-4) Anti-bot / Limits
---------------------
-
-### 4.1 Tighten Limits
-
-    setLimits(1_000 * 1e18, 2_000 * 1e18, true)
-
-*   Try transfer 5,000 → expect revert "Exceeds maxTx".
-*   Try transfer 500 → success.
-
-### 4.2 Wallet Cap
-
-*   Send multiple transfers to a fresh wallet until balance > 2,000 → expect final transfer revert "Exceeds maxWallet".
-
-### 4.3 Disable Limits
-
-    setLimits(0, 0, false)
-
-Repeat transfers → all should succeed.
-
-### 4.4 Exemptions
-
-    setLimitExempt(<addr>, true)
-
-Large transfer from/to exempt wallet → should succeed despite caps.
-
-5) RewardsDistributor Setup
----------------------------
-
-### 5.1 Deploy Distributor
-
-*   Constructor: `(tokenAddress = POMToken, owner_ = your wallet)`
-*   Expect: `token()` set correctly; `owner()` is you.
-
-### 5.2 Fund Distributor
-
-1.  From `REWARDS_WALLET`: `approve(distributor, 100000 * 1e18)`
-2.  Owner: `topUp(100000 * 1e18)`
-3.  Expect distributor balance ↑ by 100,000 POM.
-
-### 5.3 Authorize Signer
-
-    setSigner(<backend_wallet>, true)
-
-Expect: `SignerSet` event.
-
-### 5.4 Unauthorized Reward Attempt
-
-    // from NON-signer
-    rewardPlayer(player, 20)
-
-Expect: revert "not game".
-
-### 5.5 Authorized Reward
-
-    // from authorized signer
-    rewardPlayer(player, 20) // example distance
-    
-
-Expect: transfer based on tier, `RewardSent` event, player balance ↑.
-
-### 5.6 Reward Tiers
-
-Distance (km)
-
-Expected Reward
-
-5
-
-10 POM
-
-25
-
-5 POM
-
-75
-
-2 POM
-
-150
-
-0 POM (should revert with "no reward")
-
-### 5.7 Daily Cap
-
-Call `rewardPlayer(player, 5)` repeatedly until total > 200 POM (same day).
-
-Expect: revert "daily cap".
-
-### 5.8 Insufficient Pool
-
-1.  Owner drains distributor with `rescue()`.
-2.  Call `rewardPlayer(player, 10)`.
-
-Expect: revert "insufficient pool".
-
-### 5.9 Admin Rescue / Permissions
-
-*   Owner: `rescue(to, amount)` → success.
-*   Non-owner: `rescue()` → revert "Ownable: caller is not the owner".
-
-6) Security & Invariants
-------------------------
-
-*   **No external mint:** ABI has no `mint()`; only constructor calls internal `_mint()`.
-*   **Burn:** `burn()` reduces `totalSupply()`.
-*   **No arbitrary transfers:** No admin function moves others' funds.
-*   **Pausable:** When paused, transfers/mint/burn are blocked.
-*   **Rewards source:** All rewards come from distributor balance.
-
-7) Final Checklist
-------------------
-
-Check
-
-Status
-
-Total supply = 5B
-
-PASS
-
-Sum of initial balances = 5B
-
-PASS
-
-Trading gate & limits behave as configured
-
-PASS
-
-Only owner can admin
-
-PASS
-
-Rewards tiers & caps enforced
-
-PASS
-
-No post-deploy mint possible
-
-PASS
-
-Pausable works
-
-PASS
-
-Helpful Snippets
-----------------
-
-    // Tighten limits
-    setLimits(1_000 * 1e18, 2_000 * 1e18, true);
-    
-    // Disable limits
-    setLimits(0, 0, false);
-    
-    // Exempt router/treasury/owner if needed
-    setLimitExempt(<address>, true);
-    
-    // Fund distributor
-    approve(<distributor>, 100000 * 1e18)     // from REWARDS_WALLET
-    topUp(100000 * 1e18)                       // from distributor owner
-    
-    // Signer
-    setSigner(<backend_wallet>, true);
-    
-    // Reward a player (from signer)
-    rewardPlayer(<player>, <distanceKm>);
-    
-
-Tip: In Tenderly, inspect the deploy tx “Logs” to verify all `Transfer` events and balances after constructor distribution.
+# 🗺️ PinOnMap (POM) – ERC-20 Token & Rewards Distributor
+
+## Overview
+
+**PinOnMap (POM)** is the native token for the **GeoQuest / PinOnMap Game Ecosystem**, designed to support player rewards, treasury management, and community governance.  
+It consists of **two core smart contracts**:
+
+1. **POMToken.sol** — ERC-20 compliant token with fixed total supply, transparent distribution, and anti-bot safeguards.  
+2. **RewardsDistributor.sol** — an independent rewards management contract that securely distributes tokens to players based on gameplay metrics (e.g., guess accuracy in kilometers).
+
+---
+
+## 📦 POMToken.sol
+
+### Description
+
+`POMToken` is a **non-mintable**, **non-taxed**, **fixed-supply** ERC-20 token implementing:
+- Initial hardcoded distribution across ecosystem wallets.
+- Basic **anti-bot** / **fair-launch** limits (`maxTx`, `maxWallet`).
+- **Trading enable switch** and **pause control**.
+- Integration support for a future **RewardsDistributor** contract.
+
+### Key Features
+
+| Feature | Description |
+|----------|--------------|
+| **Total Supply** | `10,000,000,000 POM` (10 B with 18 decimals) |
+| **Mint Policy** | One-time mint during deployment only |
+| **Fees** | None (no tax or burn fees) |
+| **Ownership** | Uses OpenZeppelin `Ownable` |
+| **Security** | Inherits `Pausable` for emergency stops |
+| **Anti-Bot Rules** | Limits max TX and max wallet per address |
+| **Trading Control** | Owner can toggle `enableTrading()` |
+| **Distribution** | Treasury, Rewards, Dev, Marketing, Liquidity, Advisors, DAO |
+| **Decimals** | 18 |
+
+### Initial Distribution
+
+| Wallet | Percentage | Description |
+|--------|-------------|-------------|
+| Treasury | 25 % | Ecosystem & operations |
+| Rewards Pool | 30 % | Game / player rewards |
+| Dev Team | 15 % | Development fund |
+| Marketing | 10 % | Growth & promotion |
+| Liquidity | 10 % | DEX/LP provisioning |
+| Advisors | 5 % | Partner allocations |
+| DAO Reserve | 5 % | Future governance use |
+
+---
+
+## 🎮 RewardsDistributor.sol
+
+### Description
+
+`RewardsDistributor` is a **modular contract** that manages POM reward logic independently.  
+It allows authorized game servers (“signers”) to issue token rewards directly to players.
+
+The contract is **compatible with any ERC-20 token**, though it is primarily designed for use with `POMToken`.
+
+### Reward Logic
+
+| Distance Accuracy (km) | Reward |
+|------------------------|--------|
+| ≤ 10 km | **10 POM** |
+| ≤ 50 km | **5 POM** |
+| ≤ 100 km | **2 POM** |
+| > 100 km | **0 POM** |
+
+### Security and Control
+
+| Mechanism | Description |
+|------------|-------------|
+| **Authorized Signers** | Only approved game backends can trigger rewards |
+| **Reentrancy Protection** | `nonReentrant` on reward calls |
+| **Daily Player Cap** | Limits how much a player can earn per 24 h |
+| **Max Per Call** | Prevents excessive single-transaction rewards |
+| **Refill System** | Owner can top-up token balance via `transferFrom` |
+| **Emergency Rescue** | Owner can withdraw unused tokens if needed |
+| **Renounce Blocked** | Ownership renounce disabled for admin safety |
+
+---
+
+## 🧩 Integration Flow
+
+1. **Deploy `POMToken.sol`**
+   - Automatically mints the entire fixed supply (10B POM).
+   - Distributes tokens across the predefined ecosystem wallets.
+   - Keeps trading disabled until `enableTrading()` is explicitly called.
+
+2. **Deploy `RewardsDistributor.sol`**
+   - Pass the deployed POM token address as the `tokenAddress` parameter.
+   - Pass the admin or multisig wallet as the `owner_` parameter.
+   - Example:
+     ```solidity
+     new RewardsDistributor(0xYourTokenAddress, 0xYourOwnerWallet);
+     ```
+
+3. **Link the two contracts**
+   - In `POMToken`, call:
+     ```solidity
+     setRewardsDistributor(<distributor_address>);
+     ```
+   - This step allows the token contract to recognize the external distributor that will manage player rewards.
+
+4. **Fund the Rewards Distributor**
+   - Transfer tokens from the **Rewards Pool wallet** to the **RewardsDistributor** contract:
+     ```solidity
+     token.transfer(<distributor_address>, amount);
+     ```
+   - The distributor must hold enough tokens to send out rewards to players.
+
+5. **Authorize Game Signers**
+   - Allow backend game servers or relayers to call reward functions:
+     ```solidity
+     setSigner(<backend_wallet>, true);
+     ```
+   - Only addresses marked as `isGameSigner` can issue rewards through `rewardPlayer()`.
+
+6. **Send Rewards**
+   - Authorized signers trigger rewards:
+     ```solidity
+     rewardPlayer(playerAddress, distanceKm);
+     ```
+   - The contract automatically calculates the correct POM amount based on the distance tiers.
+
+7. **Optional Admin Functions**
+   - **Pause/Unpause Token Transfers**
+     ```solidity
+     pause(); // or unpause()
+     ```
+   - **Adjust Anti-Bot Limits**
+     ```solidity
+     setLimits(maxTx, maxWallet, active);
+     ```
+   - **Rescue or Top-Up Distributor**
+     ```solidity
+     rescue(to, amount);
+     topUp(amount);
+     ```
+
+---
+
+## 🔒 Safety Highlights
+
+| Mechanism | Purpose |
+|------------|----------|
+| **Immutable total supply** | No further minting or inflation possible |
+| **Ownership retained** | `renounceOwnership()` disabled for admin security |
+| **Emergency stop** | `pause()` halts all token transfers if needed |
+| **Anti-bot guardrails** | Max TX and wallet caps to ensure fair launch |
+| **No self-transfer** | Contract cannot receive stranded tokens |
+| **Non-reentrant rewards** | Prevents double claim or recursive exploit |
+| **Daily claim limits** | Stops abuse by capping per-player rewards |
+
+---
+
+## 🧠 Tech Stack
+
+- **Language:** Solidity `^0.8.30`
+- **Framework:** OpenZeppelin Contracts v5
+  - `ERC20`, `ERC20Burnable`
+  - `Ownable`, `Pausable`, `ReentrancyGuard`
+- **Networks:** Polygon / Ethereum / EVM compatible chains
+- **License:** MIT
+
+---
+
+## 🧪 Example Deployment Parameters
+
+```solidity
+// 1️⃣ Deploy Token
+POMToken pom = new POMToken();
+
+// 2️⃣ Deploy Distributor
+RewardsDistributor distributor = new RewardsDistributor(address(pom), msg.sender);
+
+// 3️⃣ Link Distributor
+pom.setRewardsDistributor(address(distributor));
+
+// 4️⃣ Transfer Tokens to Distributor (from Rewards Pool wallet)
+pom.transfer(address(distributor), 100_000_000 * 1e18);
+
+
+## 📜 License
+
+**MIT License**  
+Copyright (c) 2025  
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights  
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell  
+copies of the Software, and to permit persons to whom the Software is  
+furnished to do so, subject to the following conditions:
+
+> The above copyright notice and this permission notice shall be included in
+> all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR  
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,  
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE  
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER  
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN  
+THE SOFTWARE.
+
+---
+
+## 🧾 Audit & Verification Checklist
+
+| Status | Checkpoint |
+|:------:|-------------|
+| ✅ | ERC-20 total supply and distribution verified |
+| ✅ | Ownership and admin controls validated |
+| ✅ | `enableTrading()` gating tested |
+| ✅ | `pause()` / `unpause()` functions verified |
+| ✅ | Anti-bot (`maxTx`, `maxWallet`) limits functioning |
+| ✅ | `RewardsDistributor` link and transfer flow confirmed |
+| ✅ | Reentrancy protection active (`nonReentrant`) |
+| ✅ | `renounceOwnership` properly disabled |
+| ✅ | Polygon / Ethereum deployment ready |
+| ⚙️ | Optional multi-sig owner suggested for production |
+
+---
+
+## 🌍 Author & Credits
+
+**Developed by:** [Cleyverson Costa](https://github.com/cleyversoncosta)  
+**Contracts:** `POMToken.sol`, `RewardsDistributor.sol`  
+**Ecosystem:** *GeoQuest / PinOnMap Game*  
+
+> “Reward curiosity. Map the world. Play to earn with purpose.”
+
+---
+
+## 🧭 Useful Links
+
+- 🧱 **OpenZeppelin Docs:** [https://docs.openzeppelin.com/contracts](https://docs.openzeppelin.com/contracts)  
+- 🔗 **Etherscan Verification Guide:** [https://docs.etherscan.io](https://docs.etherscan.io)  
+- 🧰 **Remix IDE:** [https://remix.ethereum.org](https://remix.ethereum.org)  
+- 🧪 **Polygon Testnet Faucet:** [https://faucet.polygon.technology](https://faucet.polygon.technology)  
+
+---
+
+## 💡 Deployment Tips
+
+- Always test deployments first on **Sepolia** or **Polygon Mumbai**.  
+- Verify contract source on **Etherscan / Polygonscan** immediately after deployment.  
+- Keep a separate **treasury cold wallet** for ecosystem funds.  
+- Use **multi-sig** control for ownership of both contracts (recommended: Gnosis Safe).  
+- Never transfer tokens directly to the token contract (`address(this)`); they will be locked forever.  
+
+---
+
+## 🧠 Future Improvements
+
+- 🔄 Upgradeable reward logic with dynamic difficulty tiers  
+- 📊 On-chain leaderboard tracking via event indexing  
+- 🌐 Integration with decentralized identity (DID)  
+- 🪙 DAO governance proposal system for POM holders  
+- 🧩 Off-chain signature verification for game servers  
+
+---
+
+## 🏁 Final Notes
+
+This repository demonstrates a **complete ERC-20 ecosystem** designed for gaming and on-chain engagement.  
+Both contracts prioritize **security**, **clarity**, and **future extensibility** — forming a reliable foundation for any blockchain-based reward system.
+
+> Built with Solidity. Secured with OpenZeppelin. Designed for exploration.
