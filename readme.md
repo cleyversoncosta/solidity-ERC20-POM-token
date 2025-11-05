@@ -61,9 +61,9 @@ The contract is **compatible with any ERC-20 token**, though it is primarily des
 
 | Distance Accuracy (km) | Reward |
 |------------------------|--------|
-| ≤ 10 km | **10 POM** |
-| ≤ 50 km | **5 POM** |
-| ≤ 100 km | **2 POM** |
+| ≤ 10 km | **5 POM** |
+| ≤ 50 km | **3 POM** |
+| ≤ 100 km | **1 POM** |
 | > 100 km | **0 POM** |
 
 ### Security and Control
