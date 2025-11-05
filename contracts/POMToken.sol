@@ -39,22 +39,13 @@ contract POMToken is ERC20, ERC20Burnable, Ownable, Pausable {
     event LimitsUpdated(uint256 maxTx, uint256 maxWallet, bool active);
 
     // ---- Hardcoded wallets (replace with real ones before deploy) ----
-    address public constant OWNER_WALLET =
-        0xDfb98530d77eE2d29eA7933c02Eff50310201145;
-    address public constant TREASURY_WALLET =
-        0x71133f5d2548Cd9B182C2DaF68D9D00a56d4343f;
-    address public constant REWARDS_WALLET =
-        0xAB247964F4b9A1C50e6c01e4a2A808Ce07feaf41;
-    address public constant DEV_WALLET =
-        0x1bEc551c40d7F6B3B7b0366765Fa769A8DDb4f25;
-    address public constant MARKETING_WALLET =
-        0x9A982f4EFa6F344E955D28Dba751E17B60E3F217;
-    address public constant LIQUIDITY_WALLET =
-        0xF03Cb4af13aFDB94688607e100BEE39E4173B446;
-    address public constant ADVISORS_WALLET =
-        0x8DCdF001b069ef0a027aa8b4DAcA12577423a90b;
-    address public constant DAO_WALLET =
-        0xFf55e5341142eFdfD37D2E51317bBDA62DB8d8f0;
+    address public treasuryWallet;
+    address public rewardsWallet;
+    address public devWallet;
+    address public marketingWallet;
+    address public liquidityWallet;
+    address public advisorsWallet;
+    address public daoWallet;
 
     event Distributed(
         address indexed treasury,
@@ -77,41 +68,67 @@ contract POMToken is ERC20, ERC20Burnable, Ownable, Pausable {
        • Immediately distributes percentages to hardcoded wallets.
        • Initializes basic anti-bot and ownership controls.
     ------------------------------------------------------------------ */
-    constructor() ERC20("PinOnMap Token", "POM") Ownable(msg.sender) {
-        // disable checks during distribution
-        limitsInEffect = false;
-        tradingEnabled = true;
-
-        // ---- Initial distribution (fixed split) ----
-        _mint(TREASURY_WALLET, percentOf(TOTAL_SUPPLY, 2500)); // 25%
-        _mint(REWARDS_WALLET, percentOf(TOTAL_SUPPLY, 3000)); // 30%
-        _mint(DEV_WALLET, percentOf(TOTAL_SUPPLY, 1500)); // 15%
-        _mint(MARKETING_WALLET, percentOf(TOTAL_SUPPLY, 1000)); // 10%
-        _mint(LIQUIDITY_WALLET, percentOf(TOTAL_SUPPLY, 1000)); // 10%
-        _mint(ADVISORS_WALLET, percentOf(TOTAL_SUPPLY, 500)); // 5%
-        _mint(DAO_WALLET, percentOf(TOTAL_SUPPLY, 500)); // 5%
-
-        // enable checks after distribution
-        tradingEnabled = false;
-        limitsInEffect = true;
-
-        // ---- Anti-bot default limits ----
-        maxTxAmount = percentOf(TOTAL_SUPPLY, 25); // 0.25% por transação
-        maxWalletAmount = percentOf(TOTAL_SUPPLY, 50); // 0.5% por carteira
-
-        isLimitExempt[OWNER_WALLET] = true;
-        isLimitExempt[address(this)] = true;
-
-        emit Distributed(
-            TREASURY_WALLET,
-            REWARDS_WALLET,
-            DEV_WALLET,
-            MARKETING_WALLET,
-            LIQUIDITY_WALLET,
-            ADVISORS_WALLET,
-            DAO_WALLET
-        );
-    }
+    constructor(
+            address _owner,          // Owner (admin / multisig)
+            address _treasury,
+            address _rewards,
+            address _dev,
+            address _marketing,
+            address _liquidity,
+            address _advisors,
+            address _dao
+        ) ERC20("PinOnMap Token", "POM") Ownable(_owner) {
+            require(_owner != address(0), "Invalid owner");
+            require(_treasury != address(0), "Invalid treasury");
+            require(_rewards != address(0), "Invalid rewards");
+            require(_dev != address(0), "Invalid dev");
+            require(_marketing != address(0), "Invalid marketing");
+            require(_liquidity != address(0), "Invalid liquidity");
+            require(_advisors != address(0), "Invalid advisors");
+            require(_dao != address(0), "Invalid dao");
+    
+            treasuryWallet = _treasury;
+            rewardsWallet = _rewards;
+            devWallet = _dev;
+            marketingWallet = _marketing;
+            liquidityWallet = _liquidity;
+            advisorsWallet = _advisors;
+            daoWallet = _dao;
+    
+            // Disable limits during setup
+            limitsInEffect = false;
+            tradingEnabled = true;
+    
+            // ---- Initial Distribution ----
+            _mint(treasuryWallet, percentOf(TOTAL_SUPPLY, 2500));  // 25%
+            _mint(rewardsWallet, percentOf(TOTAL_SUPPLY, 3000));   // 30%
+            _mint(devWallet, percentOf(TOTAL_SUPPLY, 1500));       // 15%
+            _mint(marketingWallet, percentOf(TOTAL_SUPPLY, 1000)); // 10%
+            _mint(liquidityWallet, percentOf(TOTAL_SUPPLY, 1000)); // 10%
+            _mint(advisorsWallet, percentOf(TOTAL_SUPPLY, 500));   // 5%
+            _mint(daoWallet, percentOf(TOTAL_SUPPLY, 500));        // 5%
+    
+            // Reactivate limits
+            tradingEnabled = false;
+            limitsInEffect = true;
+    
+            // ---- Anti-bot default limits ----
+            maxTxAmount = percentOf(TOTAL_SUPPLY, 25); // 0.25%
+            maxWalletAmount = percentOf(TOTAL_SUPPLY, 50); // 0.5%
+    
+            isLimitExempt[_owner] = true;
+            isLimitExempt[address(this)] = true;
+    
+            emit Distributed(
+                treasuryWallet,
+                rewardsWallet,
+                devWallet,
+                marketingWallet,
+                liquidityWallet,
+                advisorsWallet,
+                daoWallet
+            );
+        }
 
     /* ------------------------------------------------------------------
    @param distributor  Address of the RewardsDistributor contract.
