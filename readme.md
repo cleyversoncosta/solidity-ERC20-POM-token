@@ -2,7 +2,7 @@
 
 ## Overview
 
-**PinOnMap (POM)** is the native token for the **GeoQuest / PinOnMap Game Ecosystem**, designed to support player rewards, treasury management, and community governance.  
+**PinOnMap (POM)** is the native token for the **PinOnMap Game Ecosystem**, designed to support player rewards, treasury management, and community governance.  
 It consists of **two core smart contracts**:
 
 1. **POMToken.sol** — ERC-20 compliant token with fixed total supply, transparent distribution, and anti-bot safeguards.  
