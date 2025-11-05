@@ -118,15 +118,15 @@ contract RewardsDistributor is Ownable, ReentrancyGuard {
        • Internal pure function that determines how many tokens
          a player earns based on distance accuracy (in km).
        • Reward tiers:
-           ≤ 10 km   → 10 POM
-           ≤ 50 km   → 5 POM
-           ≤ 100 km  → 2 POM
+           ≤ 10 km   → 5 POM
+           ≤ 50 km   → 3 POM
+           ≤ 100 km  → 1 POM
            > 100 km  → 0 POM
     ------------------------------------------------------------------ */
     function _calcReward(uint256 distanceKm) internal pure returns (uint256) {
-        if (distanceKm <= 10) return 10 * 1e18;
-        if (distanceKm <= 50) return 5 * 1e18;
-        if (distanceKm <= 100) return 2 * 1e18;
+        if (distanceKm <= 10) return 5 * 1e18;
+        if (distanceKm <= 50) return 3 * 1e18;
+        if (distanceKm <= 100) return 1 * 1e18;
         return 0;
     }
 
