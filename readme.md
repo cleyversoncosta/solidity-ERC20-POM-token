@@ -203,7 +203,7 @@ pom.transfer(address(distributor), 100_000_000 * 1e18);
 
 **Developed by:** [Cleyverson Costa](https://github.com/cleyversoncosta)  
 **Contracts:** `POMToken.sol`, `RewardsDistributor.sol`  
-**Ecosystem:** *GeoQuest / PinOnMap Game*  
+**Ecosystem:** *PinOnMap Game*  
 
 > “Reward curiosity. Map the world. Play to earn with purpose.”
 
